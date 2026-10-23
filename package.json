@@ -1,0 +1,13 @@
+{
+  "name": "n8n-workflow-steam",
+  "private": true,
+  "description": "Steam Key Deal Watch - n8n workflow (workflow-as-code)",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "n8n-cli build \"n8n/workflows/Steam Key Deal Watch.workflow.ts\""
+  },
+  "dependencies": {
+    "@n8n/workflow-sdk": "^2.0.0"
+  }
+}
