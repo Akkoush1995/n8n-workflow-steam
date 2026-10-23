@@ -1,0 +1,384 @@
+{
+  "id": "YY9im7k4FoS6YrcI",
+  "name": "Steam Key Deal Watch",
+  "nodes": [
+    {
+      "id": "9c3ac359-b2a5-4fa3-a272-a63c29b6b6a1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "notes": "Runs Tuesdays and Saturdays at 08:00 UTC (10:00 France in summer).",
+      "notesInFlow": true
+    },
+    {
+      "id": "aa1e7a43-f59f-4ab5-8ed5-9b305315b4ed",
+      "name": "Steam Wishlist",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.steampowered.com/IWishlistService/GetWishlist/v1/?steamid=76561199667498679",
+        "options": {}
+      },
+      "notes": "Reads the public Steam wishlist (appids).",
+      "notesInFlow": true
+    },
+    {
+      "id": "dd2c6505-8308-4dd5-8df0-d13a3e48d92c",
+      "name": "Appid List",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        432,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9c2a9f71-aaaa-bbbb-cccc-111122223333",
+              "name": "ids",
+              "value": "={{ ($json.response?.items ?? []).map(i => i.appid).slice(0, 100).join(\",\") }}",
+              "type": "string"
+            },
+            {
+              "id": "9c2a9f71-aaaa-bbbb-cccc-444455556666",
+              "name": "profileSlug",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1f3b6ebe-2ff9-4849-9a8b-78fa648f035d",
+      "name": "Steam FR Prices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        80,
+        256
+      ],
+      "parameters": {
+        "url": "=https://store.steampowered.com/api/appdetails?appids={{ $json.ids }}&cc=fr&filters=price_overview",
+        "options": {}
+      },
+      "notes": "Real store-front prices in France via appdetails (final price is in cents).",
+      "notesInFlow": true
+    },
+    {
+      "id": "0f1e155e-f3db-4a05-85c8-277163c7a4a9",
+      "name": "GG Deals USD",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        288,
+        256
+      ],
+      "parameters": {
+        "url": "=https://api.gg.deals/v1/prices/by-steam-app-id/?ids={{ $(\"Appid List\").item.json.ids }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "C3N1dHKpfApuQsXJ",
+          "name": "GG.deals API Key (Axil I)"
+        }
+      },
+      "notes": "Key reseller prices in USD. Uses the GG.deals API Key credential.",
+      "notesInFlow": true
+    },
+    {
+      "id": "989c8325-5629-45db-9e18-0c2c94789c9a",
+      "name": "FX Rate EUR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        256
+      ],
+      "parameters": {
+        "url": "https://api.frankfurter.app/latest?from=USD&to=EUR",
+        "options": {}
+      },
+      "notes": "USD to EUR daily rate from ECB, free and keyless.",
+      "notesInFlow": true
+    },
+    {
+      "id": "c98c636e-0c5d-4317-8c71-164e9c4e3aa4",
+      "name": "Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        496
+      ],
+      "parameters": {
+        "jsCode": "\n      const details = $('Steam FR Prices').all()[0]?.json ?? {};\n      const dealsRaw = $('GG Deals USD').all()[0]?.json?.data ?? {};\n      const rateObj = $('FX Rate EUR').all()[0]?.json ?? {};\n      const rate = rateObj.rates?.EUR ?? 1;\n      const rows = [];\n      for (const [appid, g] of Object.entries(dealsRaw)) {\n        const s = details[appid]?.data;\n        const steamCents = s?.price_overview?.final;\n        if (g.prices == null || steamCents == null) {\n          rows.push({\n            json: {\n              appid,\n              title: s?.name ?? g.title ?? '(unknown)',\n              steamEUR: null,\n              keyEUR: null,\n              gapEUR: null,\n              gapPct: null,\n              deal: 'n/a',\n              suspect: 'yes',\n              offerUrl: g.url ?? '',\n              note: 'region lock or missing data - manual check'\n            }\n          });\n          continue;\n        }\n        const steamEUR = Math.round((steamCents / 100) * 100) / 100;\n        const keyEUR = Math.round(g.prices.currentKeyshops * rate * 100) / 100;\n        const gapEUR = Math.round((steamEUR - keyEUR) * 100) / 100;\n        const gapPct = steamEUR > 0 ? Math.round((gapEUR / steamEUR) * 1000) / 10 : 0;\n        rows.push({\n          json: {\n            appid,\n            title: s?.name ?? g.title,\n            steamEUR,\n            keyEUR,\n            gapEUR,\n            gapPct,\n            deal: keyEUR < steamEUR ? 'yes' : 'no',\n            suspect: gapPct > 60 ? 'check region' : 'no',\n            offerUrl: g.url,\n            note: ''\n          }\n        });\n      }\n      return rows.length ? rows : [{ json: { title: '(no deals data)', note: 'all games null or missing' } }];\n      "
+      },
+      "notes": "Merges Steam FR prices, GG.deals USD prices and EUR rate; marks region-locked games as manual checks.",
+      "notesInFlow": true
+    },
+    {
+      "id": "166edcc6-2340-4aa9-943d-9a835ab698ed",
+      "name": "Convert To File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        496
+      ],
+      "parameters": {
+        "options": {
+          "delimiter": ",",
+          "fileName": "=steam-deals-{{ $today }}.csv",
+          "headerRow": true
+        }
+      }
+    },
+    {
+      "id": "74664dca-0964-43a3-be9d-9c83e370915e",
+      "name": "Compose Deals XML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        912
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst jeux = rows\n  .filter(r => r.title)\n  .map(r =>\n    r.deal === 'n/a'\n      ? '<jeu><nom>' + r.title + '</nom><statut>indisponible</statut></jeu>'\n      : '<jeu><nom>' + r.title + '</nom><steam>' + r.steamEUR + '</steam><cle>' + r.keyEUR + '</cle><ecart>' + r.gapEUR + '</ecart><ecartPct>' + r.gapPct + '</ecartPct><lien>' + (r.offerUrl || 'none') + '</lien></jeu>'\n  )\n  .join('\\n  ');\nreturn [{ json: { xml: '<jeux>\\n  ' + jeux + '\\n</jeux>' } }];"
+      }
+    },
+    {
+      "id": "855d8dd5-07a2-40bd-8f1c-dbf1959b34e1",
+      "name": "Summarize Deals",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        912
+      ],
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-flash-lite-latest",
+          "cachedResultName": "Gemini Flash-Lite Latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Voici la liste des jeux Steam avec leurs prix (Steam FR vs revendeur de clés, en EUR) au format XML :\n{{ $json.xml }}\n\nRédige en français un court résumé (5 à 8 lignes) : les meilleures affaires (plus gros écarts), les jeux indisponibles ou à vérifier manuellement, et une recommandation. Texte brut, sans markdown."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "includeMergedResponse": true,
+          "maxOutputTokens": 1024
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1hUBQJpQWZsBpeH8",
+          "name": "n8n-server (aighouba@eugeniaschool.com)"
+        }
+      }
+    },
+    {
+      "id": "b7a8855f-0a30-4013-b370-d73804245e39",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1248,
+        896
+      ],
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      }
+    },
+    {
+      "id": "cd74013b-556f-4152-a851-d7e3cebbfd5d",
+      "name": "Send Deals Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1520,
+        896
+      ],
+      "parameters": {
+        "fromEmail": "justakkoush@gmail.com",
+        "toEmail": "ighoubaaxilfodil@gmail.com",
+        "subject": "=Steam key deal watch - {{ $today }}",
+        "emailFormat": "text",
+        "text": "={{ $json.output ?? $json.content?.parts?.[0]?.text }}\n\nLe tableau complet des jeux est dans le CSV joint.",
+        "options": {
+          "appendAttribution": false,
+          "attachments": "data"
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "18Cy2CCV9KxoSd85",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Steam Wishlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Steam Wishlist": {
+      "main": [
+        [
+          {
+            "node": "Appid List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appid List": {
+      "main": [
+        [
+          {
+            "node": "Steam FR Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Steam FR Prices": {
+      "main": [
+        [
+          {
+            "node": "GG Deals USD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GG Deals USD": {
+      "main": [
+        [
+          {
+            "node": "FX Rate EUR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FX Rate EUR": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report": {
+      "main": [
+        [
+          {
+            "node": "Convert To File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Compose Deals XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert To File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Deals XML": {
+      "main": [
+        [
+          {
+            "node": "Summarize Deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Deals": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send Deals Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "description": "Twice-weekly CSV email comparing French store prices and key reseller prices for a Steam wishlist.",
+    "active": false,
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate"
+  }
+}

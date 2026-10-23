@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "n8n-cli build \"n8n/workflows/Steam Key Deal Watch.workflow.ts\""
+    "export-json": "node --experimental-strip-types scripts/export-json.mjs"
   },
   "dependencies": {
     "@n8n/workflow-sdk": "^2.0.0"

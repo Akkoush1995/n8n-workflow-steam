@@ -24,21 +24,23 @@ Schedule Trigger (mar + sam 08:00 UTC)
 | Fichier | Description |
 | --- | --- |
 | `n8n/workflows/Steam Key Deal Watch.workflow.ts` | Définition du workflow en TypeScript avec le [SDK builder n8n](https://github.com/n8n-io/n8n/tree/master/packages/workflow-sdk) |
+| `n8n/workflows/Steam Key Deal Watch.json` | Export JSON standard n8n, import direct via **Import from File** |
 
 ## Import dans n8n
 
-Faire un build avec le SDK builder :
+**Option 1 — import direct** : importe `n8n/workflows/Steam Key Deal Watch.json` via **Import from File** dans l'éditeur n8n.
+
+**Option 2 — workflow-as-code** : pousser depuis le TypeScript avec [n8ncli](https://github.com/workflows-accelerator/workflows-accelerator) :
 
 ```bash
-npm install @n8n/workflow-sdk
-npx tsx build.ts   # génère Steam Key Deal Watch.workflow.json (n8n standard)
+n8ncli pull                          # init workspace
+n8ncli push "Steam Key Deal Watch"
 ```
 
-Ensuite importer le JSON via **Import from File** dans l'éditeur n8n, ou pousser vers une instance avec [n8ncli](https://github.com/workflows-accelerator/workflows-accelerator) :
+**Option 3 — regénérer le JSON** à partir du `.ts` (nécessite `npm install`) :
 
 ```bash
-n8ncli pull                       # init workspace
-n8ncli push "Steam Key Deal Watch"
+npm run export-json
 ```
 
 ## Prérequis sur l'instance
