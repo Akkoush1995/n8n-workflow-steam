@@ -1,7 +1,7 @@
 const schedule = trigger({
   type: 'n8n-nodes-base.scheduleTrigger',
   version: 1.4,
-  config: { name: 'Schedule', parameters: { rule: { interval: [{}] } }, notes: 'Runs Tuesdays and Saturdays at 08:00 UTC (10:00 France in summer).', notesInFlow: true }
+  config: { name: 'Schedule', parameters: { rule: { interval: [{}] } }, position: [100, 300], notes: 'Runs Tuesdays and Saturdays at 08:00 UTC (10:00 France in summer).', notesInFlow: true }
 });
 
 const steam_Wishlist = node({
@@ -42,7 +42,7 @@ const build_Report = node({
 
 const convert_To_File = node({
   type: 'n8n-nodes-base.convertToFile',
-  version: 1.1,
+  version: 1.2,
   config: { name: 'Convert To File', parameters: { options: { delimiter: ',', fileName: expr('steam-deals-{{ $today }}.csv'), headerRow: true } }, position: [960, 496] }
 });
 
@@ -66,7 +66,7 @@ const compose_Deals_XML = node({
 const send_Deals_Email = node({
   type: 'n8n-nodes-base.emailSend',
   version: 2.1,
-  config: { name: 'Send Deals Email', parameters: { fromEmail: 'justakkoush@gmail.com', toEmail: 'ighoubaaxilfodil@gmail.com', subject: expr('Steam key deal watch - {{ $today }}'), emailFormat: 'text', text: expr('{{ $json.output ?? $json.content?.parts?.[0]?.text }}\n\nLe tableau complet des jeux est dans le CSV joint.'), options: { appendAttribution: false, attachments: 'data' } }, credentials: { smtp: newCredential('SMTP account', '18Cy2CCV9KxoSd85') }, position: [1520, 896], webhookId: '0c2afd19-4ea6-449e-9456-45321fed4adf' }
+  config: { name: 'Send Deals Email', parameters: { fromEmail: 'justakkoush@gmail.com', toEmail: 'ighoubaaxilfodil@gmail.com', subject: expr('Steam key deal watch - {{ $today }}'), emailFormat: 'text', text: expr('{{ $json.output ?? $json.content?.parts?.[0]?.text }}\n\nLe tableau complet des jeux est dans le CSV joint.'), options: { appendAttribution: false, attachments: 'data' } }, credentials: { smtp: newCredential('SMTP account', '18Cy2CCV9KxoSd85') }, position: [1520, 896] }
 });
 
 const wf = workflow('YY9im7k4FoS6YrcI', 'Steam Key Deal Watch', { description: 'Twice-weekly CSV email comparing French store prices and key reseller prices for a Steam wishlist.', active: false, executionOrder: 'v1', availableInMCP: true, binaryMode: 'separate' });
