@@ -1,54 +1,61 @@
 # n8n-workflow-steam — Steam Key Deal Watch
 
-Watch de prix de clés Steam : tous les mardis et samedis à 08:00 UTC, le workflow compare **le prix du store Steam (FR)** avec **le prix des revendeurs de clés (keyshops USD, convertis en EUR)** pour chaque jeu d'une wishlist Steam, génère un CSV et envoie un email avec le tableau complet + un résumé rédigé par l'IA (Gemini, en français).
+Watch de prix de clés Steam : tous les **mardis et samedis à 08:00 UTC** (10:00 France en été), le workflow compare **le prix du store Steam (FR)** avec **le prix des revendeurs de clés (keyshops USD convertis en EUR)** pour chaque jeu d'une wishlist Steam, génère un CSV, puis envoie un email avec le tableau complet + un résumé rédigé par l'IA (Gemini Flash-Lite, en français).
+
+Développé en **workflow-as-code** : le workflow est défini en TypeScript avec le [SDK builder n8n](https://github.com/n8n-io/n8n/tree/master/packages/workflow-sdk) et synchronisé avec l'instance via [**n8ncli** CLI](https://github.com/workflows-accelerator/workflows-accelerator).
 
 ## Fonctionnement (déroulé)
 
 ```
-Schedule Trigger (mar + sam 08:00 UTC)
-  → Steam Wishlist          lecture de la wishlist publique (steamid)
-  → Appid List              extraction de la liste d'appids
-  → Steam FR Prices         API appdetails (cc=fr) → prix officiels FR
-  → GG Deals USD           API gg.deals → prix keyshops USD (credential GG.deals)
-  → FX Rate EUR            Frankfurter (ECB) → taux USD→EUR
-  → Build Report           Code node : merge, calcul des écarts, détection region lock
-  → Convert To File        export CSV (steam-deals-YYYY-MM-DD.csv)
-  → Compose Deals XML      Code node : XML pour l'IA
-  → Summarize Deals        Gemini (flash-lite) → résumé FR 5–8 lignes
-  → Merge                  CSV (bin) + contenu du mail
-  → Send Deals Email       SMTP : mail texte + CSV en pièce jointe
+Scheduled Trigger (mar + sam 08:00 UTC)
+  → Steam Game Wishlist           lecture de la wishlist publique Steam (steamid)
+  → Appid List                    extraction de la liste d'appids
+  → Steam Official FR Prices (EUR)  API appdetails (cc=fr) → prix officiels FR
+  → GG Deals Steam Keys (USD)     API gg.deals → prix keyshops USD (credential GG.deals)
+  → EUR to USD Fix                Frankfurter (ECB) → taux USD→EUR
+  → Report Builder                Code node : merge, calcul des écarts, détection region lock
+  → Convert To File               export CSV (steam-deals-YYYY-MM-DD.csv)
+  → Compose Deals XML             Code node : XML pour l'IA
+  → Summarize Deals               Gemini (flash-lite) → résumé FR 5–8 lignes
+  → Merge                         CSV (binaire) + contenu du mail
+  → Email Alert                   SMTP : mail texte + CSV en pièce jointe
 ```
 
 ## Contenu du repo
 
 | Fichier | Description |
 | --- | --- |
-| `n8n/workflows/Steam Key Deal Watch.workflow.ts` | Définition du workflow en TypeScript avec le [SDK builder n8n](https://github.com/n8n-io/n8n/tree/master/packages/workflow-sdk) |
-| `n8n/workflows/Steam Key Deal Watch.json` | Export JSON standard n8n, import direct via **Import from File** |
+| `n8n/workflows/Steam Key Deal Watch.workflow.ts` | Définition du workflow en TypeScript (SDK builder n8n) — **référence unique**, code review friendly |
+| `n8n/config/n8n-cli.json` | Configuration de l'environnement (`development`) + projectId |
+| `n8n/config/n8n-standards.json` / `n8n-layout.json` | Standards (noms, langue, notes) et réglages de layout |
+
+## Workflow-as-code avec n8ncli
+
+```bash
+n8ncli status                 # état de sync local ↔ instance (comme git status)
+n8ncli validate --lint        # contrôle schéma, versions de nœuds, standards
+n8ncli layout --dry-run       # simulate un réagencement automatique des nœuds
+n8ncli pull                   # importe les workflows de l'instance
+n8ncli push                   # déploie les modifications locales sur l'instance
+```
 
 ## Import dans n8n
 
-**Option 1 — import direct** : importe `n8n/workflows/Steam Key Deal Watch.json` via **Import from File** dans l'éditeur n8n.
-
-**Option 2 — workflow-as-code** : pousser depuis le TypeScript avec [n8ncli](https://github.com/workflows-accelerator/workflows-accelerator) :
+Depuis l'éditeur, le workflow est **déjà sur l'instance** (poussé avec n8ncli). Pour repartir de zéro :
 
 ```bash
-n8ncli pull                          # init workspace
-n8ncli push "Steam Key Deal Watch"
+n8ncli init                   # initialise le workspace
+n8ncli pull                   # rapatrie les workflows
 ```
 
-**Option 3 — regénérer le JSON** à partir du `.ts` (nécessite `npm install`) :
-
-```bash
-npm run export-json
-```
+Le workflow doit être renseigné dans le workspace avant d'être poussé (mapping nom de fichier ↔ workflow distant).
 
 ## Prérequis sur l'instance
 
 - Credential **GG.deals API Key** (`httpTemplatedCustomAuth`) — clé API gg.deals
 - Credential **Google Gemini** (`googlePalmApi`) — compte Google avec Gemini
 - Credential **SMTP** (`smtp`) — pour l'envoi du rapport
-- Optionnel : variable d'env `GG_DEALS_KEY` si vous repassez l'URL en key param
+- Le workflow reste **inactif** (`active: false`) tant qu'on ne le publie pas (`n8ncli publish`)
 
 ## Licence
 
