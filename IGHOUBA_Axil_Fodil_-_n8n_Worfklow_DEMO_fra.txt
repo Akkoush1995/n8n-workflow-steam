@@ -1,0 +1,98 @@
+00:00:02,140 --> 00:00:40,520
+[toux] Ah mon Dieu ! Bonsoir Lucas, j'espère que tu vas bien. C'est la 25e fois que je refais la vidéo pour que ce soit bien. J'espère qu'elle sera correcte cette fois. Hum, donc quand on se retrouve pour la vidéo tant attendue, c'est Axil, celle du-- qui est censée accompagner notre projet N8N. Donc la première partie de la vidéo sera bien évidemment la démo du workflow que tu peux apercevoir ici. On va, euh, expliquer vite fait l'objectif du workflow, deux, trois petits concepts parce que-- juste pour faciliter la compréhension, euh, survoler son architecture, expliquer la logique derrière et pointer du doigt deux ou trois limites sans pour autant trop examiner le code parce que la vidéo risque d'être longue. 
+
+00:00:42,020 --> 00:00:54,020
+Euh, la deuxième partie sera l'exécution de commandes N8N CLI à travers, euh, bah, le terminal d'OpenChamber. J'ai décidé d'utiliser OpenChamber parce que c'était plus pertinent. Je sais pas si on était censé le faire vraiment. 
+
+00:00:55,320 --> 00:01:06,420
+Et, euh, la dernière partie sera bien évidemment le feedback. Du coup, si j'ai des choses à ajouter, je les rajouterai. [rire] Donc, euh, sans plus attendre, ça fait déjà une minute, on commence. 
+
+00:01:07,520 --> 00:01:14,240
+Euh, je sais pas si tu connais Steam, c'est une plateforme qui est un peu le monopole pour ce qui est achat de jeux vidéo. 
+
+00:01:15,260 --> 00:01:35,680
+Sauf que, tu peux remarquer, ils sont très chers. Donc, euh, en tant que joueur, j'ai voulu, bah, travailler sur quelque chose qui pouvait être intéressant pour moi. Et, euh, il y a quelque chose qui s'appelle les Steam Keys. Les Steam Keys, c'est des clés que tu achètes à travers des revendeurs qui sont beaucoup moins chers que les jeux vidéo sur la plateforme et qui te permettent de voir les jeux moins chers. 
+
+00:01:36,860 --> 00:01:38,620
+Et, euh, ces clés-là, 
+
+00:01:39,840 --> 00:02:03,780
+euh, c'est, c'est ce que-- c'est ce qui va servir de, pardon, de, de point de comparaison avec les prix officiels pour pouvoir alimenter un petit peu et orienter mes achats. Ensuite, ça va m'envoyer un rapport directement via mon mail. Et ça, ça se fera deux fois par semaine, une fois tous les mardis et une fois tous les jeudis à 10 heures. Euh, pardon, une fois tous les mardis, une fois tous les samedis. 
+
+00:02:04,920 --> 00:02:06,360
+Donc, sans plus attendre, commençons. 
+
+00:02:07,620 --> 00:02:15,580
+La première phase, c'est la phase de data collection, fetching the relevant games and their prices. Donc là, on va prendre les jeux pertinents, leurs prix 
+
+00:02:16,980 --> 00:02:35,940
+et les prix de leurs Steam Keys. Euh, ça, euh, on verra ça un petit peu plus tard. La première chose à savoir, c'est que, euh, je vais prendre les relevant games, les jeux pertinents. Je vais pas prendre n'importe quel jeu, je veux des jeux qui m'intéressent. Ce qui fait que là, je vais utiliser l'API de Steam, qui est gratuite et publique, pour accéder à ma wishlist, ma liste de vœux de jeux vidéo, 
+
+00:02:37,500 --> 00:02:45,280
+qui est également publi-- euh, qui est également publique, ce qui fait qu'il peut fetch directement les ID numériques des jeux vidéo qui vont ensuite, 
+
+00:02:46,400 --> 00:02:50,520
+à travers cette node set que j'ai nommée App ID List, 
+
+00:02:51,980 --> 00:03:22,380
+compiler ces ID de jeux vidéo. Et à partir de là, on a déjà la liste de jeux vidéo qui vont être traités. Ensuite, ce qu'on va faire, c'est qu'on va prendre les prix. We're gonna fix the prices. La première partie, c'est, euh, prendre les prix officiels, euh, comme tu peux les voir ici. C'est directement dans la boutique Steam. Encore une fois, API gratuite, et cetera. Euh, petit souci, ces prix-là seront donnés en centimes d'euros et pas en euros directement. Donc, il faudra faire une conversion en euros directement. 
+
+00:03:23,600 --> 00:03:39,120
+La deuxième, euh, node de API request de cette phase, enfin, cette partie, c'est l'utilisation du, de l'API GG Deal, GG Deals pour fetch les prix des Steam Keys. 
+
+00:03:40,460 --> 00:04:03,720
+Donc, euh, par exemple, là, Crypt of the NecroDancer, il y a le prix, euh, de la clé, simple, efficace, sauf qu'il est en US dollars. Donc, il faut le convertir. Mais les taux de conversion changent tous les jours. Donc, euh, ce qu'on va faire, c'est que au-- à l'instant T de l'exécution du workflow, à chaque fois, il ira fetch le taux de conversion, euh, de U-- du US dollars en euros, euh, 
+
+00:04:05,420 --> 00:04:13,780
+et à travers l'API de Frank Rotterdam qui utilise, euh, des sources de la banque, euh, de banque européenne officielle. Donc voilà. 
+
+00:04:15,100 --> 00:04:46,560
+Là, on a toutes nos infos. On passe directement à la phase deux. La phase deux, c'est cross-data analysis. Ce que notre premier node code va faire, c'est convertir les prix en centimes vers l'euro, convertir les prix en dollars des clés en euros, calculer la différence et le ratio et bien évidemment rajouter une, euh, un champ deal si il est bien évidemment plus intéressant que son prix en retail sur Steam. C'est à partir de là qu'on va avoir une, euh, 
+
+00:04:48,160 --> 00:04:57,220
+qu'on va avoir deux branches. La première branche s'occupera tout simplement de prendre, bah, les infos qui ont été compilées, euh, sur le Report Builder 
+
+00:04:59,100 --> 00:05:14,240
+et de les mettre en format CSV pour que ce soit directement lisible sur un tableau. Et la deuxième branche, ce qu'elle va faire, c'est qu'elle va prendre, bah, euh, les ID des jeux vidéo et-- enfin toutes les infos, pardon, qui ont été compilées sur ce Report Builder, 
+
+00:05:15,400 --> 00:05:47,200
+les mettre sous format XML pour qu'elles soient plus facilement lisibles dans le balisage, euh, quand on utilisera cette node, euh, de, de Gemini qui va nous permettre d'avoir un petit résumé à chaque fois dans l'email, euh, généré par IA qui me pointera du doigt les affaires les plus intéressantes. Donc, euh, voilà, on utilise bien évidemment Gemini Flashlight Latest, c'est gratuit, c'est rapide. Et là, on reprend le merge, 
+
+00:05:48,340 --> 00:05:50,140
+les deux branches, on merge le tout. 
+
+00:05:51,540 --> 00:06:07,820
+On a un output réel et cet output en fichier CSV sera envoyé, euh, vers mon email. Et comme tu peux le voir ici, le, le-- tout s'est exécuté et tout a été envoyé. Euh, voilà.
+
+00:06:09,280 --> 00:06:32,740
+[toux] Donc, euh, on passe à la deuxième partie qui serait ici l'utilisation de, euh, l'exécution de commandes n8n CLI à travers le terminal. [toux] Donc, euh, après des problèmes techniques, me revoici à nouveau. Euh, sur cette deuxième partie, on va exécuter certaines commandes, euh, 
+
+00:06:33,820 --> 00:06:45,880
+de, sur n8n CLI à travers notre terminal OpenChamber. Donc, euh, on va d'abord commencer par vérifier la version de notre n8n CLI. One, 
+
+00:06:47,060 --> 00:06:50,180
+two. Ça devrait être 1.2.45. 
+
+00:06:52,100 --> 00:07:51,560
+C'est parfait. Ensuite, ce qu'on va faire, c'est qu'on va vérifier le statut. On va utiliser la commande « status ». Donc c'est ça qui va vérifier si ce qu'il y a dans le cloud est en synchro avec ce qu'il y a dans le local. Donc « Your branch is up to date with « pull sync », no need to change, to, euh, no changes to pull or push ». Donc il n'y a rien à pull ou push qui pourrait changer quoi que ce soit. C'est déjà bien. [toux] Ensuite, on peut tester des commandes en dry, euh, en dry run. Euh, dry run, c'est-à-dire que ce sera une simulation comme ça, ça ne va toucher à aucun élément de mon workflow. Ça va juste être des simulations pour pouvoir vérifier que c'est exécutable. Donc, par exemple, là, euh, layout dry run, c'est quelque chose, c'est une commande qui est censée, euh, optimiser le layout, euh, de mon, euh, de mon workflow. Et dans ce scénario hypothétique, on pourrait juste faire un push après avoir changé, euh, fix layout, dry run. 
+
+00:07:53,640 --> 00:08:03,100
+Et ça, ça, c'est censé nous assurer que effectivement, « possibility to successfully », tout est bien connecté. Donc, euh, voilà pour la deuxième partie. 
+
+00:08:06,180 --> 00:08:46,200
+Donc, euh, troisième partie, encore une fois faite différemment. Je me suis rendu compte que mon enregistreur de vidéo fonctionnait mal si je changeais de fenêtre. Donc, euh, pour le feedback, je dirais que la majorité, c'est très positif. Je, j'ai réussi à apprendre un tas de choses. J'ai réussi à, à un petit peu prendre en main un logiciel que je n'avais, je n'avais aucune idée, euh, la manière dont l'utiliser. J'ai pu apprendre à utiliser OpenChamber. J'ai-- les outils que tu nous as fait configurer, ils sont phénoménaux. Je peux travailler en local et mettre ça directement et push ça vers le cloud. Donc merci pour ça. 
+
+00:08:47,400 --> 00:08:59,260
+Euh, dans le positif, je dirais que, bah, dans la globalité, c'est ça, c'est ton implication dans le travail. Je suis-- c'est, c'est toujours bien de sentir qu'un professeur veut nous apprendre des choses. 
+
+00:09:00,560 --> 00:09:01,400
+Et, euh, 
+
+00:09:02,740 --> 00:09:28,100
+la-- je dirais que la chose que j'aurais aimé voir un petit peu plus pour fluidifier le tout, ça aurait été de mieux appréhender, euh, l'environnement n8n, c'est-à-dire l'interface, mais même les règles du jeu, on va dire, dans ce genre d'environnement. Euh, qu'est-ce qu'OpenChamber ? Un petit peu plus en détail, euh, comme ça. Moi, personnellement, c'est mon feedback personnel, ça m'aurait peut-être un petit peu plus permis de, 
+
+00:09:29,160 --> 00:09:33,860
+d'appréhender la chose et de la prendre en main beaucoup plus facilement de ma manière. 
+
+00:09:35,020 --> 00:09:45,520
+Mais autrement, euh, merci beaucoup pour, euh, ce que tu nous as appris en une petite semaine. C'est très fort et, et, euh, à la revoyure. Merci beaucoup encore une fois. Au revoir.
