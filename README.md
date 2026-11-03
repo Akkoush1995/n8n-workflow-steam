@@ -10,7 +10,6 @@ Vidéo de présentation du projet (exécution du workflow + commandes n8ncli + f
 
 - 🎥 **Vidéo** : [IGHOUBA Axil Fodil - n8n Worfklow DEMO(1).mp4](IGHOUBA%20Axil%20Fodil%20-%20n8n%20Worfklow%20DEMO(1).mp4) — 205 Mo (Git LFS)
 - 📝 **Transcript / sous-titres** : [IGHOUBA_Axil_Fodil_-_n8n_Worfklow_DEMO_fra.txt](IGHOUBA_Axil_Fodil_-_n8n_Worfklow_DEMO_fra.txt)
-- 📋 **Notes de démo** : [DEMO-steam-key-deal-watch.md](DEMO-steam-key-deal-watch.md)
 
 ## Fonctionnement (déroulé)
 
